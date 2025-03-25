@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forum</title>
+    <style>
+        #login {
+            display: none;
+        }
+
+        .forum {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="forum">
+        <div class="post-question" id="postQuestion">
+            <!-- <input type="text" name="userNameInput" id="userNameInput" class="user-name-input"
+                placeholder="Enter Your name!"> -->
+            <input type="text" name="userQuestionInput" id="userQuestionInput" class="user-question-input"
+                placeholder="Enter your question!">
+            <button id="postQuestionButton">Post Your Question</button>
+        </div>
+        <div class="display-question" id="displayQuestion"></div>
+    </div>
+    <div class="auth">
+        <form id="signup">
+            <input type="text" class="username" placeholder="Username">
+            <input type="text" class="email" placeholder="email">
+            <input type="text" class="password" placeholder="password">
+            <button type="submit">Sign Up</button>
+            <p class="view-login">Swap Form</p>
+        </form>
+        <form id="login">
+            <input type="text" class="username" placeholder="Username">
+            <input type="text" class="password" placeholder="password">
+            <button type="submit">Login</button>
+            <p class="view-signup">Swap Form</p>
+        </form>
+    </div>
+
+    <script>
+
+        let forumData = [];
+        let currentUser
+
+
+        const userNameInput = document.getElementById('userNameInput');
+        const userQuestionInput = document.getElementById('userQuestionInput');
+        const postQuestionButton = document.getElementById('postQuestionButton');
+        const displayQuestion = document.getElementById('displayQuestion');
+
+        const viewSignup = document.querySelector('.view-signup');
+        const viewLogin = document.querySelector('.view-login');
+
+        const signupForm = document.getElementById('signup');
+        const loingForm = document.getElementById('login');
+
+        viewSignup.addEventListener('click', () => {
+            signupForm.style.display = 'block';
+            loingForm.style.display = 'none';
+        })
+
+        viewLogin.addEventListener('click', () => {
+            signupForm.style.display = 'none';
+            loingForm.style.display = 'block';
+        })
+
+        signupForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const username = this.querySelector('.username').value.trim();
+            const email = this.querySelector('.email').value.trim();
+            const password = this.querySelector('.password').value.trim();
+
+            let users = JSON.parse(localStorage.getItem('userData')) || [];
+            if (username, email, password) {
+                const userData = {
+                    username: username,
+                    email: email,
+                    password: password
+                }
+                users.push(userData);
+            }
+            localStorage.setItem('userData', JSON.stringify(users));
+        })
+
+        loingForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const username = this.querySelector('.username').value.trim();
+            const password = this.querySelector('.password').value.trim();
+
+            const userData = JSON.parse(localStorage.getItem('userData'));
+
+            if (userData && Array.isArray(userData)) {
+                const isUser = userData.find(ud => ud.username === username && ud.password === password);
+                console.log(isUser);
+                if (isUser) {
+                    currentUser = isUser;
+                    document.querySelector('.forum').style.display = 'block';
+                    loadForumData();
+                    displayForumData();
+                } else {
+                    alert('Invalid username or password');
+                }
+            } else {
+                alert('No user data found');
+            }
+        });
+
+
+        function loadForumData() {
+            const fetchForumData = JSON.parse(localStorage.getItem('forumData')) || [];
+            forumData = fetchForumData || forumData;
+            displayForumData()
+        }
+
+        function storeForumData() {
+            // const userNameValue = userNameInput.value.trim();
+            const userQuestionValue = userQuestionInput.value.trim();
+
+            if (userQuestionValue) {
+                forumData.push({
+                    // posterName: userNameValue,
+                    posterQuestion: userQuestionValue,
+                    answers: []
+                })
+            }
+            localStorage.setItem('forumData', JSON.stringify(forumData));
+
+            loadForumData();
+            displayForumData();
+        }
+
+        function displayForumData() {
+            if (!currentUser) return;
+            displayQuestion.innerHTML = '';
+            forumData.forEach((fd, questionIndex) => {
+                const question = document.createElement('div');
+                question.innerHTML =
+                    `
+                <div>
+                    <p>${currentUser.username}</p>
+                    <p>${fd.posterQuestion}</p>
+                    <button onclick="answer(${questionIndex})">Answer</button>
+                </div>
+                <div class="answers">
+                    ${fd.answers.map((ar, answerIndex) =>
+                        ` <div>
+                            <span>${currentUser.username}</span>
+                            <span>${ar.answerPosterValue}</span>
+                            <button onclick="repliesOfAnswer(${questionIndex}, ${answerIndex})">Reply Answer</button>
+                             <div class="repliesOfanswer">
+                              ${ar.repliesOfAnswer.map(roa =>
+                            `
+                                  <div>
+                                    <span>${currentUser.username}</span>
+                                    <span>${roa.answerReplierValue}</span>
+                                  </div>
+                        `).join('')}
+                       </div>
+                    </div>`).join('')}
+                </div>
+                `
+                displayQuestion.appendChild(question);
+            })
+        }
+
+        function answer(questionIndex) {
+            // const replierNameInput = prompt("Enter your name:");
+            const replierAnswerInput = prompt("Enter your answer:");
+
+            if (replierAnswerInput) {
+
+                const userAnswers = {
+                    // answerPosterName: replierNameInput,
+                    answerPosterValue: replierAnswerInput,
+                    repliesOfAnswer: [], // Initialize replies as empty array
+                };
+
+                forumData[questionIndex].answers.push(userAnswers);
+            }
+
+            localStorage.setItem('forumData', JSON.stringify(forumData));
+
+            loadForumData();
+            displayForumData();
+        }
+
+        function repliesOfAnswer(questionIndex, answerIndex) {
+            // const replierNameInput = prompt("Enter your name:");
+            const replierReplyInput = prompt("Enter your reply:");
+
+            if (replierReplyInput) {
+
+                const userReplies = {
+                    // answerReplierName: replierNameInput,
+                    answerReplierValue: replierReplyInput
+                }
+
+                // Ensure repliesOfAnswer is always an array
+                if (!forumData[questionIndex].answers[answerIndex].repliesOfAnswer) {
+                    forumData[questionIndex].answers[answerIndex].repliesOfAnswer = [];
+                }
+
+                forumData[questionIndex].answers[answerIndex].repliesOfAnswer.push(userReplies);
+            }
+
+            localStorage.setItem('forumData', JSON.stringify(forumData));
+
+            loadForumData();
+            displayForumData();
+        }
+
+        postQuestionButton.addEventListener('click', storeForumData);
+
+        loadForumData();
+    </script>
+</body>
+
+</html>
